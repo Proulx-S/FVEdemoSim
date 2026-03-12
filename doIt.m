@@ -32,12 +32,14 @@ else
 end
 
 % Load dependencies and set paths
-%%% matlab util (contains my matlab git wrapper)
+%%% initial cloning of matlab util to get gitClone.m
 tool = 'util'; toolURL = 'https://github.com/Proulx-S/util.git';
 if ~exist(fullfile(toolDir, tool), 'dir'); system(['git clone ' toolURL ' ' fullfile(toolDir, tool)]); end; addpath(genpath(fullfile(toolDir,tool)))
 %%% matlab others
-tool = 'pcMRAsim2'; repoURL = 'https://github.com/Proulx-S/pcMRAsim2.git';
-gitClone(repoURL, fullfile(toolDir, tool));
+tool = 'util'; repoURL = 'https://github.com/Proulx-S/util.git'; branch = 'dev-FVEdemoSim';
+gitClone(repoURL, fullfile(toolDir, tool), [], branch);
+tool = 'pcMRAsim'; repoURL = 'https://github.com/Proulx-S/pcMRAsim.git'; branch = 'dev-FVEdemoSim';
+gitClone(repoURL, fullfile(toolDir, tool), [], branch);
 
 %% %%%%%%%%%%%%%%%%%%
 disp(projectCode)
@@ -80,6 +82,15 @@ pVessel.S.surround  = [];  % [{0,1}au] | default blood at 7T (requires acquistio
 % pVessel.T1     = T1;
 % pVessel.T2star = T2star;
 
+pSim.voxFE        = 1;       % [mm]      | default 1
+pSim.voxPE        = 1;       % [mm]      | default voxFE
+pSim.matFE        = 1;       % [voxels] must be odd      | default 3
+pSim.matPE        = 1;       % [voxels] must be odd      | default matFE
+pSim.fovBoot      = 2^7;     % [number of bootstrap random object-to-grid shifts] | default 2^7 = 128
+pSim.nSpin        = (2^8)^2; % [number of spins per voxel] | default (2^8)^2 = 2^16 = 65,536
+
+
+
 pMri.relax.blood.T1     = 2.58; % [s] | default human in vivo at 7T
 % Blood T1. Human at 7T (Rane & Gore, Magn Reson Imaging 31(3):477–479, 2013, doi:10.1016/j.mri.2012.08.008):
 %   arterial 2.29±0.10 s, venous 2.07±0.12 s in vitro (37°C); venous sagittal sinus in vivo 2.45±0.11 s.
@@ -95,23 +106,17 @@ pMri.relax.GM.T2star    = 0.0329; % [s] | default human in vivo at 7T
 % Gray matter cortical T2*. Human at 7T (Peters et al., Magn Reson Imaging 25:748–753, 2007, doi:10.1016/j.mri.2007.02.014):
 %   cortical gray matter 32.9±2.3 ms, white matter 27.7±4.3 ms at 7T (six subjects).
 pMri.sliceThickness = [];% [mm]   | default 1
-pMri.voxFE    = 1; % [mm]      | default 1
-pMri.voxPE    = 1; % [mm]      | default voxFE
 pMri.TR             = 0.05; % [s]    | default 50 ms
 pMri.FA             = 35;   % [deg]  | default 40 deg
 pMri.venc.vencRes   = 2;    % [cm/s] | default 2
 pMri.venc.vencMax   = 50;   % [cm/s] | default 50
 pMri.venc.vencList  = M1toVenc(M1ListBi);      % [cm/s] | default [0 8] or a list built from vencRes and vencMax
 
-pSim.matFE        = 1;      % [odd number of voxels]      | default 3
-pSim.matPE        = 1;      % [odd number of voxels]      | default matFE
-pSim.fovBoot      = 2^7;    % [number of bootstrap random object-to-grid shifts] | default 2^7
-pSim.nSpin        = 100000; % [number of spins per voxel] | default 100,000
 
 
 
 
-res = runSim(pVessel, pVenc, pSim, [], 'inflowOnSpinVelocity'                      ); % Sf is computed from inflow enhancement of indivudal spins
+res = runSim(pVessel, pSim, pMri);
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 pVesselOrig;
 res;

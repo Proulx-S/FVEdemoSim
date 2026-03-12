@@ -4,7 +4,10 @@
 			"path": "."
 		},
 		{
-			"path": "../tools/pcMRAsim2"
+			"path": "../tools/pcMRAsim"
+		},
+		{
+			"path": "../tools/util"
 		}
 	],
 	"settings": {}
