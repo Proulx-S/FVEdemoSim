@@ -54,6 +54,24 @@ info.toClean = {};
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Set-up simulation parameters
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+p = runSim();
+pVessel = p.pVessel;
+pSim    = p.pSim;
+pMri    = p.pMri; clear p;
+pMri.venc
+return;
+res = runSim(pVessel, pSim, pMri);
+
+
+
+
+
+pVessel.posFE = 0;
+pVessel.posPE = 0;
+pVessel.ID = 1;
+pVessel.PD = 0;
+pVessel.WT = 0;
+
 M1List   = 0:vencToM1(50):vencToM1(2);
 M1ListBi = cat(2,-flip(M1List(2:end)),M1List);
 vRes = M1toVenc(mean(diff(M1List)));
