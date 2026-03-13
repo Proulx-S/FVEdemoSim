@@ -60,18 +60,35 @@ pSim    = p.pSim;
 pMri    = p.pMri; clear p;
 
 pMri.venc.method = 'FVEbipo';
-pMri.venc.vencRes = 2;
+pMri.venc.vencRes = 1;
 pMri.venc.vencMax = 50;
 
-% M1List   = 0:vencToM1(50):vencToM1(2);
-% M1ListBi = cat(2,-flip(M1List(2:end)),M1List);
-% vRes = M1toVenc(mean(diff(M1List)));
-% vMax = M1toVenc(max(M1List));
+pVessel1 = pVessel;
+pVessel1.profile = 'parabolic1';
+pVessel1.vMean = 4;
+res1 = runSim(pVessel1, pSim, pMri);
+pVessel2 = pVessel;
+pVessel2.vMean = 0;
+pVessel2.profile = 'plug';
+res2 = runSim(pVessel2, pSim, pMri);
+pVessel3 = pVessel;
+pVessel3.vMean = 0;
+pVessel3.profile = 'plug';
+res3 = runSim(pVessel3, pSim, pMri);
 
-res = runSim(pVessel, pSim, pMri);
+Ns = length(res1.pMri.venc.vencList);
+f = linspace(-res1.pMri.venc.vencMax,res1.pMri.venc.vencMax,Ns);
+figure;
+I = res1.I+res2.I+res3.I;
+plot(f,abs(fftshift(fft(squeeze(I)))),'.-')
+axis tight
+xlabel('velocity [cm/s]')
+grid on
+% ylim([-pi,pi])
+yscale('linear')
+xlim([-50,50])
 
 
-return;
 
 
 %% %%%%%%%%%%%%%%
