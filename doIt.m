@@ -51,6 +51,8 @@ info.project.scratch = projectScratch;
 info.toClean = {};
 
 
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Set-up simulation parameters
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,36 +61,90 @@ pVessel = p.pVessel;
 pSim    = p.pSim;
 pMri    = p.pMri; clear p;
 
+pVessel.profile = 'plug';
+pVessel.S.lumen    = 1;
+pVessel.S.wall     = 0;
+pVessel.S.surround = 1;
+
+pVessel1 = pVessel;
+pVessel2 = pVessel;
+pVessel1.vMean = 10;
+pVessel2.vMean = -14;
+
+% Bipolar FVE
 pMri.venc.method = 'FVEbipo';
 pMri.venc.vencRes = 1;
 pMri.venc.vencMax = 50;
 
-pVessel1 = pVessel;
-pVessel1.profile = 'parabolic1';
-pVessel1.vMean = 4;
 res1 = runSim(pVessel1, pSim, pMri);
-pVessel2 = pVessel;
-pVessel2.vMean = 0;
-pVessel2.profile = 'plug';
 res2 = runSim(pVessel2, pSim, pMri);
-pVessel3 = pVessel;
-pVessel3.vMean = 0;
-pVessel3.profile = 'plug';
-res3 = runSim(pVessel3, pSim, pMri);
 
-Ns = length(res1.pMri.venc.vencList);
-f = linspace(-res1.pMri.venc.vencMax,res1.pMri.venc.vencMax,Ns);
+vel = [res1.vMap(res1.pSim.gridVoxIdx==0) res2.vMap(res2.pSim.gridVoxIdx==0)];
+I   = squeeze(res1.I+res2.I);
+Ns  = length(I);
+f   = linspace(-pMri.venc.vencMax,pMri.venc.vencMax,Ns);
+
+bipo.vel = vel;
+bipo.I   = I;
+bipo.Ns  = Ns;
+bipo.f   = f;
+
+
+% Monopolar FVE
+pMri.venc.method = 'FVEmono';
+pMri.venc.vencRes = 1;
+pMri.venc.vencMax = 50;
+
+res1 = runSim(pVessel1, pSim, pMri);
+res2 = runSim(pVessel2, pSim, pMri);
+
+vel = [res1.vMap(res1.pSim.gridVoxIdx==0) res2.vMap(res2.pSim.gridVoxIdx==0)];
+I   = squeeze(res1.I+res2.I);
+Ns  = length(I);
+f   = linspace(-pMri.venc.vencMax,pMri.venc.vencMax,Ns);
+
+mono.vel = vel;
+mono.I   = I;
+mono.Ns  = Ns;
+mono.f   = f;
+
+% Plot
 figure;
-I = res1.I+res2.I+res3.I;
-plot(f,abs(fftshift(fft(squeeze(I)))),'.-')
-axis tight
-xlabel('velocity [cm/s]')
+hT = tiledlayout(2,1); hT.TileSpacing = 'compact'; hT.Padding = 'compact'; ax = {};
+
+ax{end+1} = nexttile;
+[N,edges] = histcounts(mono.vel);
+hH = histogram('BinEdges',edges,'BinCounts',N/max(N),'FaceColor',0.5.*[1 1 1],'EdgeColor','none');
+hold on
+vSpec = fftshift(fft(mono.I));
+plot(mono.f,abs(vSpec)./max(abs(vSpec)),'.-w')
+ylabel('spectrum mag or spin count');
+% yyaxis right
+% plot(mono.f,angle(vSpec),'.-'); ylim([-pi,pi])
+xline(res1.pVessel.vMean,'-','color','r');
+xline(res2.pVessel.vMean,'-','color','r');
+ax{end}.XAxis.Visible = 'off';
 grid on
-% ylim([-pi,pi])
-yscale('linear')
-xlim([-50,50])
+title('Monopolar FVE');
+legend('true spin count','velocity spectrum','true velocity','location','northwest');
+
+% ylabel('spectrum phase');
+
+ax{end+1} = nexttile;
+[N,edges] = histcounts(bipo.vel);
+hH = histogram('BinEdges',edges,'BinCounts',N/max(N),'FaceColor',0.5.*[1 1 1],'EdgeColor','none');
+hold on
+vSpec = fftshift(fft(bipo.I));
+plot(bipo.f,abs(vSpec)./max(abs(vSpec)),'.-w')
+ylabel('spectrum mag or spin count');
+% yyaxis right
+% plot(bipo.f,angle(vSpec),'.-'); ylim([-pi,pi])
+xline(res1.pVessel.vMean,'-','color','r');
+xline(res2.pVessel.vMean,'-','color','r');
+grid on
+xlabel('velocity (cm/s)');
+title('Bipolar FVE');
+% ylabel('spectrum phase');
 
 
-
-
-%% %%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
