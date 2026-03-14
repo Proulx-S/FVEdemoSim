@@ -14,7 +14,7 @@ user = char(java.lang.System.getProperty('user.name'));
 
 % Setup folders
 if strcmp(os,'Linux') && strcmp(host,'takoyaki') && strcmp(user,'sebp')
-    envId      = 1;
+    envId = 1;
     storageDrive = '/local/users/Proulx-S/';
     scratchDrive = '/scratch/users/Proulx-S/';
     projectCode    = fullfile(scratchDrive, projectName);        if ~exist(projectCode,'dir');    mkdir(projectCode);    end
@@ -71,46 +71,73 @@ pVessel2 = pVessel;
 pVessel1.vMean = 10;
 pVessel2.vMean = -14;
 
-% Bipolar FVE
-pMri.venc.method = 'FVEbipo';
-pMri.venc.vencRes = 1;
-pMri.venc.vencMax = 50;
-
-res1 = runSim(pVessel1, pSim, pMri);
-res2 = runSim(pVessel2, pSim, pMri);
-
-vel = [res1.vMap(res1.pSim.gridVoxIdx==0) res2.vMap(res2.pSim.gridVoxIdx==0)];
-I   = squeeze(res1.I+res2.I);
-Ns  = length(I);
-f   = linspace(-pMri.venc.vencMax,pMri.venc.vencMax,Ns);
-
-bipo.vel = vel;
-bipo.I   = I;
-bipo.Ns  = Ns;
-bipo.f   = f;
 
 
 % Monopolar FVE
 pMri.venc.method = 'FVEmono';
-pMri.venc.vencRes = 1;
-pMri.venc.vencMax = 50;
+pMri.venc.FVEres = 1;
+pMri.venc.FVEbw = 50;
 
 res1 = runSim(pVessel1, pSim, pMri);
 res2 = runSim(pVessel2, pSim, pMri);
 
 vel = [res1.vMap(res1.pSim.gridVoxIdx==0) res2.vMap(res2.pSim.gridVoxIdx==0)];
 I   = squeeze(res1.I+res2.I);
-Ns  = length(I);
-f   = linspace(-pMri.venc.vencMax,pMri.venc.vencMax,Ns);
 
-mono.vel = vel;
-mono.I   = I;
-mono.Ns  = Ns;
-mono.f   = f;
+mono.vel     = vel;
+mono.I       = I;
+mono.Ns      = res1.pMri.venc.Ns;
+mono.f       = res1.pMri.venc.FVEvel;
+mono.FVEres  = res1.pMri.venc.FVEres;
+mono.FVEbw   = res1.pMri.venc.FVEbw;
+mono.vencMin = res1.pMri.venc.vencMin;
+mono.vencMax = res1.pMri.venc.vencMax;
+
+
+% Bipolar FVE (matched res)
+pMri.venc.method = 'FVEbipo';
+pMri.venc.FVEres = 1;
+pMri.venc.FVEbw = 50;
+
+res1 = runSim(pVessel1, pSim, pMri);
+res2 = runSim(pVessel2, pSim, pMri);
+
+vel = [res1.vMap(res1.pSim.gridVoxIdx==0) res2.vMap(res2.pSim.gridVoxIdx==0)];
+I   = squeeze(res1.I+res2.I);
+
+bipoA.vel     = vel;
+bipoA.I       = I;
+bipoA.Ns      = res1.pMri.venc.Ns;
+bipoA.f       = res1.pMri.venc.FVEvel;
+bipoA.FVEres  = res1.pMri.venc.FVEres;
+bipoA.FVEbw   = res1.pMri.venc.FVEbw;
+bipoA.vencMin = res1.pMri.venc.vencMin;
+bipoA.vencMax = res1.pMri.venc.vencMax;
+
+% Bipolar FVE (low res)
+pMri.venc.method = 'FVEbipo';
+pMri.venc.FVEres = 2;
+pMri.venc.FVEbw = 50;
+
+res1 = runSim(pVessel1, pSim, pMri);
+res2 = runSim(pVessel2, pSim, pMri);
+
+vel = [res1.vMap(res1.pSim.gridVoxIdx==0) res2.vMap(res2.pSim.gridVoxIdx==0)];
+I   = squeeze(res1.I+res2.I);
+
+bipoB.vel     = vel;
+bipoB.I       = I;
+bipoB.Ns      = res1.pMri.venc.Ns;
+bipoB.f       = res1.pMri.venc.FVEvel;
+bipoB.FVEres  = res1.pMri.venc.FVEres;
+bipoB.FVEbw   = res1.pMri.venc.FVEbw;
+bipoB.vencMin = res1.pMri.venc.vencMin;
+bipoB.vencMax = res1.pMri.venc.vencMax;
+
 
 % Plot
 figure;
-hT = tiledlayout(2,1); hT.TileSpacing = 'compact'; hT.Padding = 'compact'; ax = {};
+hT = tiledlayout(3,1); hT.TileSpacing = 'compact'; hT.Padding = 'compact'; ax = {};
 
 ax{end+1} = nexttile;
 [N,edges] = histcounts(mono.vel);
@@ -119,32 +146,39 @@ hold on
 vSpec = fftshift(fft(mono.I));
 plot(mono.f,abs(vSpec)./max(abs(vSpec)),'.-w')
 ylabel('spectrum mag or spin count');
-% yyaxis right
-% plot(mono.f,angle(vSpec),'.-'); ylim([-pi,pi])
 xline(res1.pVessel.vMean,'-','color','r');
 xline(res2.pVessel.vMean,'-','color','r');
-ax{end}.XAxis.Visible = 'off';
 grid on
-title('Monopolar FVE');
+title(['Monopolar FVE; N=' num2str(mono.Ns) ', FVEres=' num2str(mono.FVEres) ', FVEbw=' num2str(mono.FVEbw) ', vencMin=' num2str(mono.vencMin) ', vencMax=' num2str(mono.vencMax)]);
 legend('true spin count','velocity spectrum','true velocity','location','northwest');
 
-% ylabel('spectrum phase');
-
 ax{end+1} = nexttile;
-[N,edges] = histcounts(bipo.vel);
+[N,edges] = histcounts(bipoA.vel);
 hH = histogram('BinEdges',edges,'BinCounts',N/max(N),'FaceColor',0.5.*[1 1 1],'EdgeColor','none');
 hold on
-vSpec = fftshift(fft(bipo.I));
-plot(bipo.f,abs(vSpec)./max(abs(vSpec)),'.-w')
+vSpec = fftshift(fft(bipoA.I));
+plot(bipoA.f,abs(vSpec)./max(abs(vSpec)),'.-w')
 ylabel('spectrum mag or spin count');
-% yyaxis right
-% plot(bipo.f,angle(vSpec),'.-'); ylim([-pi,pi])
 xline(res1.pVessel.vMean,'-','color','r');
 xline(res2.pVessel.vMean,'-','color','r');
 grid on
+title(['Bipolar FVE; N=' num2str(bipoA.Ns) ', FVEres=' num2str(bipoA.FVEres) ', FVEbw=' num2str(bipoA.FVEbw) ', vencMin=' num2str(bipoA.vencMin) ', vencMax=' num2str(bipoA.vencMax)]);
+
+ax{end+1} = nexttile;
+[N,edges] = histcounts(bipoB.vel);
+hH = histogram('BinEdges',edges,'BinCounts',N/max(N),'FaceColor',0.5.*[1 1 1],'EdgeColor','none');
+hold on
+vSpec = fftshift(fft(bipoB.I));
+plot(bipoB.f,abs(vSpec)./max(abs(vSpec)),'.-w')
+ylabel('spectrum mag or spin count');
+xline(res1.pVessel.vMean,'-','color','r');
+xline(res2.pVessel.vMean,'-','color','r');
+grid on
+title(['Bipolar FVE; N=' num2str(bipoB.Ns) ', FVEres=' num2str(bipoB.FVEres) ', FVEbw=' num2str(bipoB.FVEbw) ', vencMin=' num2str(bipoB.vencMin) ', vencMax=' num2str(bipoB.vencMax)]);
+
 xlabel('velocity (cm/s)');
-title('Bipolar FVE');
-% ylabel('spectrum phase');
+
+
 
 
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
