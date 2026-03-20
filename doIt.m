@@ -456,3 +456,102 @@ xlim([-100 100])
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % The benefit in spectral sharpness of the monopolar real spectrum might be due to a smaller minimum venc when matcing number of points, spectral resolution and bandwidth of bipolar FVE.
 % When matching number of points and minimum venc at the expense of spectral resolution and bandwidth, the difference appears to be lesser.
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Confirm translational invariance
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+p = runSim();
+pVessel = p.pVessel;
+pSim    = p.pSim;
+pMri    = p.pMri; clear p;
+
+%%%%%%%%%%
+% Centered
+pSim.matFE = 1;
+pSim.matPE = 1;
+pMri.venc.method = 'FVEbipo';
+pMri.venc.FVEres = 1;
+pMri.venc.FVEbw  = 100;
+pVessel.profile = rand([pSim.nSpin 1]).*50 - 50/2;
+pVessel.S.lumen    = 1;
+pVessel.S.surround = 1;
+res = runSim(pVessel, pSim, pMri);
+
+vel = res.vMap(res.pSim.gridVoxIdx==0);
+I   = squeeze(res.I);
+bipo.vel     = vel;
+bipo.I       = I;
+bipo.Ns      = res.pMri.venc.Ns;
+bipo.f       = res.pMri.venc.FVEvel;
+bipo.FVEres  = res.pMri.venc.FVEres;
+bipo.FVEbw   = res.pMri.venc.FVEbw;
+bipo.vencMin = res.pMri.venc.vencMin;
+bipo.vencMax = res.pMri.venc.vencMax;
+
+vSpec = fftshift(fft(bipo.I));
+
+figure;
+[N,edges] = histcounts(bipo.vel);
+hH = histogram('BinEdges',edges,'BinCounts',N/max(N),'FaceColor',0.5.*[1 1 1],'EdgeColor','w');
+hold on
+plot(bipo.f,abs(vSpec)./max(abs(vSpec)),'.-w')
+ylabel('spectrum mag or spin count');
+grid on
+title(['Bipolar FVE; N=' num2str(bipo.Ns) ', FVEres=' num2str(bipo.FVEres) ', FVEbw=' num2str(bipo.FVEbw) ', vencMin=' num2str(bipo.vencMin) ', vencMax=' num2str(bipo.vencMax)]);
+legend('true spin count','velocity spectrum','location','northwest','AutoUpdate','off');
+xlabel('velocity (cm/s)');
+ylim([-1.1 1.1])
+
+yyaxis right;
+plot(bipo.f,angle(vSpec),'.-');
+ylim([-pi pi]);
+ylabel('velocity phase (rad)');
+
+
+%%%%%%%%%%%%%%
+% Off-centered
+pSim.matFE = 1;
+pSim.matPE = 1;
+pMri.venc.method = 'FVEbipo';
+pMri.venc.FVEres = 1;
+pMri.venc.FVEbw  = 100;
+pVessel.profile = rand([pSim.nSpin 1]).*50;
+pVessel.S.lumen    = 1;
+pVessel.S.surround = 1;
+res = runSim(pVessel, pSim, pMri);
+
+vel = res.vMap(res.pSim.gridVoxIdx==0);
+I   = squeeze(res.I);
+bipo.vel     = vel;
+bipo.I       = I;
+bipo.Ns      = res.pMri.venc.Ns;
+bipo.f       = res.pMri.venc.FVEvel;
+bipo.FVEres  = res.pMri.venc.FVEres;
+bipo.FVEbw   = res.pMri.venc.FVEbw;
+bipo.vencMin = res.pMri.venc.vencMin;
+bipo.vencMax = res.pMri.venc.vencMax;
+
+vSpec = fftshift(fft(bipo.I));
+
+figure;
+[N,edges] = histcounts(bipo.vel);
+hH = histogram('BinEdges',edges,'BinCounts',N/max(N),'FaceColor',0.5.*[1 1 1],'EdgeColor','w');
+hold on
+plot(bipo.f,abs(vSpec)./max(abs(vSpec)),'.-w')
+ylabel('spectrum mag or spin count');
+grid on
+title(['Bipolar FVE; N=' num2str(bipo.Ns) ', FVEres=' num2str(bipo.FVEres) ', FVEbw=' num2str(bipo.FVEbw) ', vencMin=' num2str(bipo.vencMin) ', vencMax=' num2str(bipo.vencMax)]);
+legend('true spin count','velocity spectrum','location','northwest','AutoUpdate','off');
+xlabel('velocity (cm/s)');
+ylim([-1.1 1.1])
+
+yyaxis right;
+plot(bipo.f,angle(vSpec),'.-');
+ylim([-pi pi]);
+ylabel('velocity phase (rad)');
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% confirmed
