@@ -50,7 +50,7 @@ info.project.storage = projectStorage;
 info.project.scratch = projectScratch;
 info.toClean = {};
 
-
+return
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% FVE demo simulation -- demonstrate proper velocity spectra for monopolar and bipolar encoding schemes
@@ -555,3 +555,100 @@ ylim([-pi pi]);
 ylabel('velocity phase (rad)');
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % confirmed
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Are static spins resolvable from laminar flow spins?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+p = runSim();
+pVessel = p.pVessel;
+pSim    = p.pSim;
+pMri    = p.pMri; clear p;
+
+pVessel.vMean = 7;
+pVessel.S.lumen    = 1;
+pVessel.S.surround = 1;
+pMri.venc.FVEres = 2;
+pMri.venc.FVEbw = 16;
+
+res1 = runSim(pVessel, pSim, pMri);
+
+pVessel.S.surround = 0;
+res2 = runSim(pVessel, pSim, pMri);
+
+% Plot
+res = res1;
+figure('Menubar','none','Toolbar','none');
+[N,edges] = histcounts(res.vMap(res.pSim.gridVoxIdx==0),50);
+hH = histogram('BinEdges',edges,'BinCounts',N/max(N),'FaceColor',0.5.*[1 1 1],'EdgeColor','none');
+hold on
+vSpec = fftshift(fft(squeeze(res.I)));
+plot(res.pMri.venc.FVEvel,abs(vSpec)./max(abs(vSpec)),'.-w')
+vSpec2 = fftshift(fft(squeeze(res2.I)));
+plot(res.pMri.venc.FVEvel,abs(vSpec2)./max(abs(vSpec)),'.--y')
+ylabel('spectrum mag or spin count');
+xline(res.pVessel.vMean,'-','color','r');
+grid on
+legend('true spin count','velocity spectrum (S_s=1)','velocity spectrum (S_s=0)','true velocity','location','northwest');
+axis tight;
+xlabel('velocity (cm/s)');
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Entirely determined by the velocity resolution of FVE
+
+
+
+
+
+
+
+
+
+
+%% 
+
+
+p = runSim();
+pVessel = p.pVessel;
+pSim    = p.pSim;
+pMri    = p.pMri; clear p;
+
+% pSim.matFE = 1;
+% pSim.matPE = 1;
+% pMri.venc.method = 'FVEbipo';
+% pMri.venc.FVEres = 1;
+% pMri.venc.FVEbw  = 100;
+% pVessel.profile = rand([pSim.nSpin 1]).*50 - 50/2;
+% pVessel.S.lumen    = 1;
+% pVessel.S.surround = 1;
+% res = runSim(pVessel, pSim, pMri);
+
+pMri.TR = 0.075;
+pMri.TE = 0.0098;
+pMri.FA = 50;
+pMri.sliceThickness = 2.2;
+vel = linspace(0,9,100);
+[Mz ,pMri] = getMz_ss(pMri,pMri.relax.blood,vel);
+
+figure;
+plot(vel,Mz,'-ow','MarkerFaceColor','w');
+grid on;
+xlabel('velocity (cm/s)');
+ylabel('Mz/M0');
+
+
+(pMri.sliceThickness/10) / (pMri.TR)
+
+
+
+
+
+
+
+
+
