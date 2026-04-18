@@ -53,6 +53,46 @@ info.toClean = {};
 return
 
 
+%% define FVE vencs (use pcMRAsim and util -> dev-xinAndSava2026branch)
+p = runSim;
+p.pMri.venc.method = 'FVEmono';
+p.pMri.venc.FVEres = 4;
+p.pMri.venc.FVEbw = 20;
+res = runSim(p.pVessel,p.pSim,p.pMri);
+length(res.pMri.venc.vencList)
+res.pMri.venc.vencList
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%% Phase dispersion demo
+%%%%%%%%%%%%%%%%%%%%%%%%
+n = 2^16;
+theta0 = 0;
+thetaMaxList = linspace(0,3*2*pi,2^8)
+X = nan(size(thetaMaxList));
+for i = 1:length(thetaMaxList)
+    thetaMax = thetaMaxList(i);
+    theta = linspace(theta0,thetaMax,n);
+    X(i) = mean(exp(1i.*theta));
+end
+
+figure('Menu','none','Toolbar','none')
+plot(thetaMaxList./2,abs(X),'.-')
+ylabel('bulk vector mag')
+xlabel('average phase')
+grid on
+axis tight
+
+yyaxis right
+plot(thetaMaxList./2,angle(X),'.-')
+ylabel('bulk vector phase')
+ax = gca;
+ax.DataAspectRatio = [1 1 1];
+%% %%%%%%%%%%%%%%%%%%%%%
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% FVE demo simulation -- velocity-related enhancment of steady-state longitudinal magnetization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
