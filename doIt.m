@@ -62,6 +62,9 @@ res = runSim(p.pVessel,p.pSim,p.pMri);
 length(res.pMri.venc.vencList)
 res.pMri.venc.vencList
 
+% fov 145x160 -- 145x160
+% mat 261x384 --  87x128
+
 
 
 
